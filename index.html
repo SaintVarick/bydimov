@@ -544,6 +544,63 @@
             .btn { padding: 10px 15px; font-size: 0.9rem; margin: 5px; }
             .bet-input { padding: 10px 12px; font-size: 0.9rem; }
         }
+
+.mines-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 25px 0;
+    justify-items: center;
+}
+
+.mines-grid button {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #17a2b8, #3dd5f3); /* синий градиент */
+    border: 2px solid #006d9c;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.mines-grid button:hover {
+    transform: translateY(-5px);
+}
+
+.mines-grid button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+
+@media (max-width: 768px) {
+    .mines-grid button {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .mines-grid {
+        gap: 8px;
+    }
+
+    .mines-grid button {
+        width: 45px;
+        height: 45px;
+        font-size: 1rem;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -630,6 +687,7 @@
             </div>
             <div class="result" id="diceResult"></div>
         </div>
+		
 
         <!-- Колесо фортуны -->
         <div class="game-card">
@@ -660,7 +718,24 @@
             </div>
             <div class="result" id="crashResult"></div>
         </div>
+	
+ <!-- Сапер -->
+<div class="game-card">
+        <div class="game-icon">💣</div>
+        <h2 class="game-title">Минное поле</h2>
+        <div class="mines-grid" id="minesGrid"></div>
+
+        <input type="number" class="bet-input" id="minesBet" placeholder="Ставка" min="10" max="100" value="10">
+        <div>
+            <button class="btn btn-success" onclick="startMines()">🎯 Играть</button>
+            <button class="btn btn-warning" onclick="collectMines()">💰 Забрать</button>
+        </div>
+        <div class="result" id="minesResult"></div>
     </div>
+</div> <!-- конец .games-container -->
+
+
+	
 
     <script>
         let balance = 1000;
@@ -1121,5 +1196,98 @@ function crashEnd(won, amount) {
     updateBalance();
 }
 
+// Сапер
+let minesState = {
+    active: false,
+    minePositions: [],
+    openedCells: [],
+    winnings: 0,
+    bet: 0
+};
+
+function startMines() {
+    const bet = parseInt(document.getElementById('minesBet').value);
+    const grid = document.getElementById('minesGrid');
+    const resultDiv = document.getElementById('minesResult');
+
+    if (bet > balance || bet < 10 || bet > 100) {
+        alert('Недопустимая ставка!');
+        return;
+    }
+
+    balance -= bet;
+    updateBalance();
+    grid.innerHTML = '';
+    resultDiv.textContent = '';
+    resultDiv.className = 'result';
+
+    minesState = {
+        active: true,
+        minePositions: [],
+        openedCells: [],
+        winnings: 0,
+        bet: bet
+    };
+
+    const totalCells = 8;
+    while (minesState.minePositions.length < 4) {
+        const pos = Math.floor(Math.random() * totalCells);
+        if (!minesState.minePositions.includes(pos)) {
+            minesState.minePositions.push(pos);
+        }
+    }
+
+    for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('button');
+        cell.className = 'btn btn-info';
+        cell.textContent = '❓';
+        cell.style.width = '60px';
+        cell.style.height = '60px';
+        cell.style.fontSize = '1.5rem';
+        cell.style.borderRadius = '12px';
+        cell.onclick = () => revealCell(i, cell);
+        grid.appendChild(cell);
+    }
+
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    grid.style.gap = '10px';
+    grid.style.justifyContent = 'center';
+}
+
+function revealCell(index, cellElement) {
+    if (!minesState.active || minesState.openedCells.includes(index)) return;
+
+    minesState.openedCells.push(index);
+
+    if (minesState.minePositions.includes(index)) {
+        cellElement.textContent = '💣';
+        cellElement.className = 'btn btn-danger';
+        minesState.active = false;
+        document.getElementById('minesResult').className = 'result lose';
+        document.getElementById('minesResult').textContent = `💥 Вы наткнулись на мину и потеряли ставку!`;
+    } else {
+        const gain = Math.random() < 0.5 ? 0 : minesState.bet * 2;
+        minesState.winnings += gain;
+        cellElement.textContent = gain > 0 ? '💎' : '⚪';
+        cellElement.className = 'btn btn-success';
+        if (gain > 0) {
+            document.getElementById('minesResult').className = 'result win';
+            document.getElementById('minesResult').textContent = `✅ Безопасная клетка: +${gain} монет`;
+        } else {
+            document.getElementById('minesResult').textContent = `😐 Пусто, но безопасно...`;
+        }
+    }
+}
+
+function collectMines() {
+    if (!minesState.active) return;
+
+    balance += minesState.winnings;
+    updateBalance();
+    document.getElementById('minesResult').className = 'result win';
+    document.getElementById('minesResult').textContent = `💰 Вы забрали ${minesState.winnings} монет! Игра окончена.`;
+    minesState.active = false;
+}
 
         </script>
