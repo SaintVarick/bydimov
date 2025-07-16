@@ -685,42 +685,56 @@
 		function spinSlots() {
     const bet = parseInt(document.getElementById('slotBet').value);
     const resultDiv = document.getElementById('slotResult');
-    if (bet > balance || bet < 10 || bet > 100) {
+    const reels = [
+        document.getElementById('reel1'),
+        document.getElementById('reel2'),
+        document.getElementById('reel3')
+    ];
+    const slotSymbols = ['🍒', '🍋', '🍊', '🔔', '7️⃣', '💎'];
+    const spinCount = [20, 30, 40];
+    const finalSymbols = [];
+
+    if (bet > balance || bet < 10 || bet > 300) {
         alert('Недопустимая ставка!');
         return;
     }
 
     balance -= bet;
     updateBalance();
-
-    const reels = [
-        document.getElementById('reel1'),
-        document.getElementById('reel2'),
-        document.getElementById('reel3')
-    ];
-
-    const slotSymbols = ['🍒', '🍋', '💎', '7️⃣', '⭐', '🍀'];
-    const results = [];
+    resultDiv.textContent = '';
+    resultDiv.className = 'result';
 
     reels.forEach((reel, index) => {
-        const symbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-        reel.textContent = symbol;
-        results.push(symbol);
+        let count = 0;
+        const interval = setInterval(() => {
+            reel.textContent = slotSymbols[count % slotSymbols.length];
+            count++;
+            if (count >= spinCount[index]) {
+                clearInterval(interval);
+                const final = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+                reel.textContent = final;
+                finalSymbols[index] = final;
+
+                // Дождёмся завершения всех барабанов
+                if (finalSymbols.filter(Boolean).length === reels.length) {
+                    setTimeout(() => {
+                        if (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]) {
+                            const winnings = bet * 5;
+                            balance += winnings;
+                            resultDiv.className = 'result win';
+                            resultDiv.textContent = `🎉 Комбо: ${finalSymbols.join(' ')} — Вы выиграли ${winnings} монет!`;
+                        } else {
+                            resultDiv.className = 'result lose';
+                            resultDiv.textContent = `😢 ${finalSymbols.join(' ')} — Нет совпадений. Попробуйте снова!`;
+                        }
+                        updateBalance();
+                    }, 300);
+                }
+            }
+        }, 50 + index * 30); // Эффект ускорения
     });
-
-    let win = false;
-    if (results[0] === results[1] && results[1] === results[2]) {
-        win = true;
-        balance += bet * 5;
-        resultDiv.className = 'result win';
-        resultDiv.textContent = `🎉 Вы выиграли ${bet * 5} монет!`;
-    } else {
-        resultDiv.className = 'result lose';
-        resultDiv.textContent = `😢 Не повезло. Попробуйте ещё!`;
-    }
-
-    updateBalance();
 }
+
 
 // Рулетка
 let rouletteRotation = 0; // общая переменная для накопления вращения
