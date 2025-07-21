@@ -648,8 +648,38 @@
         height: 28px;
     }
 }
+/* --- очко --- */
+.cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 15px 0;
+}
 
+.card {
+    width: 60px;
+    height: 85px;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    border: 2px solid #333;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #333;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
+}
 
+.card.red {
+    color: #ff3333;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
 
 
 
@@ -811,7 +841,28 @@
         <div class="result" id="russianResult"></div>
     </div>
 </div>
+ 
+ <!-- 21очко -->
+<div class="game-card">
+    <div class="game-icon">🃏</div>
+    <h2 class="game-title">21 очко</h2>
 
+    <div class="blackjack-area">
+        <div class="score">Дилер: <span id="twentyDealerScore">0</span></div>
+        <div class="cards" id="twentyDealerCards"></div>
+
+        <div class="score">Вы: <span id="twentyPlayerScore">0</span></div>
+        <div class="cards" id="twentyPlayerCards"></div>
+
+        <input type="number" class="bet-input" id="twentyBet" placeholder="Ставка" min="10" max="100" value="10">
+        <div>
+            <button class="btn btn-success" onclick="startTwenty()">🎲 Старт</button>
+            <button class="btn btn-warning" onclick="hitTwenty()" id="twentyHitBtn" disabled>➕ Ещё</button>
+            <button class="btn btn-info" onclick="standTwenty()" id="twentyStandBtn" disabled>⏸ Стоп</button>
+        </div>
+        <div class="result" id="twentyResult"></div>
+    </div>
+</div>
 
 </div> <!-- конец .games-container -->
 
@@ -1454,5 +1505,124 @@ function playRussianRoulette() {
         }
     }, 120);
 }
+// 21 очко
+let twentyGame = {
+    deck: [],
+    player: [],
+    dealer: [],
+    active: false
+};
 
+function createTwentyDeck() {
+    const suits = ['♠', '♣', '♥', '♦'];
+    const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+    const deck = [];
+    suits.forEach(suit => {
+        values.forEach(value => deck.push({ value, suit }));
+    });
+    return deck.sort(() => Math.random() - 0.5);
+}
+
+function drawTwentyCard() {
+    return twentyGame.deck.pop();
+}
+
+function getTwentyCardValue(card) {
+    if (['J','Q','K'].includes(card.value)) return 10;
+    if (card.value === 'A') return 11;
+    return parseInt(card.value);
+}
+
+function calculateTwentyScore(cards) {
+    let score = 0, aces = 0;
+    cards.forEach(c => {
+        score += getTwentyCardValue(c);
+        if (c.value === 'A') aces++;
+    });
+    while (score > 21 && aces--) score -= 10;
+    return score;
+}
+
+function updateTwentyUI() {
+    const dealerDiv = document.getElementById('twentyDealerCards');
+    const playerDiv = document.getElementById('twentyPlayerCards');
+    dealerDiv.innerHTML = '';
+    playerDiv.innerHTML = '';
+
+    twentyGame.dealer.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'card' + (['♥','♦'].includes(c.suit) ? ' red' : '');
+        el.textContent = c.value + c.suit;
+        dealerDiv.appendChild(el);
+    });
+
+    twentyGame.player.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'card' + (['♥','♦'].includes(c.suit) ? ' red' : '');
+        el.textContent = c.value + c.suit;
+        playerDiv.appendChild(el);
+    });
+
+    document.getElementById('twentyDealerScore').textContent = calculateTwentyScore(twentyGame.dealer);
+    document.getElementById('twentyPlayerScore').textContent = calculateTwentyScore(twentyGame.player);
+}
+
+function startTwenty() {
+    const bet = parseInt(document.getElementById('twentyBet').value);
+    if (bet > balance || bet < 10 || bet > 300) return alert("Недопустимая ставка");
+    balance -= bet;
+    updateBalance();
+
+    twentyGame.deck = createTwentyDeck();
+    twentyGame.player = [drawTwentyCard(), drawTwentyCard()];
+    twentyGame.dealer = [drawTwentyCard()];
+    twentyGame.active = true;
+
+    document.getElementById('twentyHitBtn').disabled = false;
+    document.getElementById('twentyStandBtn').disabled = false;
+    document.getElementById('twentyResult').textContent = '';
+    document.getElementById('twentyResult').className = 'result';
+
+    updateTwentyUI();
+}
+
+function hitTwenty() {
+    if (!twentyGame.active) return;
+    twentyGame.player.push(drawTwentyCard());
+    updateTwentyUI();
+    const score = calculateTwentyScore(twentyGame.player);
+    if (score > 21) endTwenty(false);
+}
+
+function standTwenty() {
+    if (!twentyGame.active) return;
+    while (calculateTwentyScore(twentyGame.dealer) < 17) {
+        twentyGame.dealer.push(drawTwentyCard());
+    }
+    updateTwentyUI();
+    const p = calculateTwentyScore(twentyGame.player);
+    const d = calculateTwentyScore(twentyGame.dealer);
+    const win = p <= 21 && (p > d || d > 21);
+    endTwenty(win);
+}
+
+function endTwenty(win) {
+    const bet = parseInt(document.getElementById('twentyBet').value);
+    document.getElementById('twentyHitBtn').disabled = true;
+    document.getElementById('twentyStandBtn').disabled = true;
+    twentyGame.active = false;
+
+    const result = document.getElementById('twentyResult');
+    if (win) {
+        const winnings = bet * 2;
+        balance += winnings;
+        result.className = 'result win';
+        result.textContent = `🤑 Победа! Вы получили ${winnings} монет.`;
+    } else {
+        result.className = 'result lose';
+        result.textContent = `💥 Проигрыш. Удачи в следующем раунде.`;
+    }
+
+    updateBalance();
+}
         </script>
