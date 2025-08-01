@@ -679,7 +679,66 @@
 .card:hover {
     transform: translateY(-5px);
 }
+/* Gates of Olympus — обновлённый стиль */
+.olympus-container {
+    margin: 20px 0;
+}
 
+.olympus-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px auto;
+    max-width: 300px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(138, 43, 226, 0.15));
+    border-radius: 15px;
+    border: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.olympus-cell {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    border: 2px solid #8a2be2;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: transform 0.4s ease;
+}
+
+.olympus-cell.spin {
+    animation: pulseSpin 0.6s ease-in-out;
+}
+
+@keyframes pulseSpin {
+    0% { transform: scale(1) rotateY(0deg); }
+    50% { transform: scale(1.2) rotateY(180deg); }
+    100% { transform: scale(1) rotateY(360deg); }
+}
+
+.olympus-cell.winning {
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+.olympus-multiplier {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin: 15px 0;
+    padding: 10px 20px;
+    background: linear-gradient(45deg, rgba(138, 43, 226, 0.2), rgba(255, 215, 0, 0.2));
+    border-radius: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
 
 
     </style>
@@ -731,27 +790,6 @@
             <div class="result" id="rouletteResult"></div>
         </div>
 
-        <!-- Блэкджек -->
-        <div class="game-card">
-            <div class="game-icon">🃏</div>
-            <h2 class="game-title">Блэкджек</h2>
-            <div class="blackjack-area">
-                <div class="score">🎭 Дилер: <span id="dealerScore">0</span></div>
-                <div class="cards" id="dealerCards"></div>
-
-                <div class="score">👤 Вы: <span id="playerScore">0</span></div>
-                <div class="cards" id="playerCards"></div>
-
-                <input type="number" class="bet-input" id="blackjackBet" placeholder="Ставка" min="10" max="100" value="10">
-                <div>
-                    <button class="btn btn-success" onclick="startBlackjack()">🆕 Новая игра</button>
-                    <button class="btn btn-warning" onclick="hit()" id="hitBtn" disabled>➕ Взять карту</button>
-                    <button class="btn btn-info" onclick="stand()" id="standBtn" disabled>✋ Стоп</button>
-                </div>
-            </div>
-            <div class="result" id="blackjackResult"></div>
-        </div>
-
         <!-- Кости -->
         <div class="game-card">
             <div class="game-icon">🎲</div>
@@ -767,21 +805,6 @@
                 <button class="btn btn-warning" onclick="betSeven()">🎯 Ровно 7</button>
             </div>
             <div class="result" id="diceResult"></div>
-        </div>
-		
-
-        <!-- Колесо фортуны -->
-        <div class="game-card">
-            <div class="game-icon">🎪</div>
-            <h2 class="game-title">Колесо фортуны</h2>
-            <div class="wheel-fortune" id="wheelFortune">
-                <div class="roulette-pointer"></div>
-            </div>
-            <input type="number" class="bet-input" id="wheelBet" placeholder="Ставка" min="10" max="100" value="10">
-            <div>
-                <button class="btn btn-success" onclick="spinWheel()">🎡 Крутить колесо</button>
-            </div>
-            <div class="result" id="wheelResult"></div>
         </div>
 
         <!-- Краш -->
@@ -862,7 +885,28 @@
         <div class="result" id="twentyResult"></div>
     </div>
 </div>
-
+<!-- Gates of Olympus -->
+<div class="game-card">
+    <div class="game-icon">⚡</div>
+    <h2 class="game-title">Gates of Olympus</h2>
+    
+    <div class="olympus-container">
+        <div class="olympus-grid" id="olympusGrid"></div>
+        
+        <div class="olympus-multiplier" id="olympusMultiplier">
+            💫 Множитель: <span id="multiplierValue">1x</span>
+        </div>
+        
+        <input type="number" class="bet-input" id="olympusBet" placeholder="Ставка" min="10" max="300" value="20">
+        
+        <div>
+            <button class="btn btn-success" onclick="spinOlympus()" id="olympusSpinBtn">⚡ Вращать</button>
+            <button class="btn btn-warning" onclick="autoSpin()" id="olympusAutoBtn">🔄 Авто</button>
+        </div>
+    </div>
+    
+    <div class="result" id="olympusResult"></div>
+</div>
 </div> <!-- конец .games-container -->
 
 
@@ -991,147 +1035,6 @@ function handleRouletteBet(playerChoice) {
         updateBalance();
     }, 1200); // синхронизировано с CSS переходом
 }
-
-// < Блек джук
-function startBlackjack() {
-    const bet = parseInt(document.getElementById('blackjackBet').value);
-    const resultDiv = document.getElementById('blackjackResult');
-    if (bet > balance || bet < 10 || bet > 300) {
-        alert('Недопустимая ставка!');
-        return;
-    }
-
-    balance -= bet;
-    updateBalance();
-
-    blackjackGame.deck = createDeck();
-    blackjackGame.playerCards = [];
-    blackjackGame.dealerCards = [];
-    blackjackGame.gameActive = true;
-
-    document.getElementById('hitBtn').disabled = false;
-    document.getElementById('standBtn').disabled = false;
-    resultDiv.textContent = '';
-    resultDiv.className = 'result';
-
-    // сдача карт
-    blackjackGame.playerCards.push(drawCard());
-    blackjackGame.playerCards.push(drawCard());
-    blackjackGame.dealerCards.push(drawCard());
-    blackjackGame.dealerCards.push(drawCard());
-
-    updateBlackjackUI();
-}
-
-function createDeck() {
-    const suits = ['♠', '♣', '♥', '♦'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    const deck = [];
-
-    suits.forEach(suit => {
-        values.forEach(value => {
-            deck.push({ value, suit });
-        });
-    });
-
-    return deck.sort(() => Math.random() - 0.5);
-}
-
-function drawCard() {
-    return blackjackGame.deck.pop();
-}
-
-function getCardValue(card) {
-    if (['J', 'Q', 'K'].includes(card.value)) return 10;
-    if (card.value === 'A') return 11;
-    return parseInt(card.value);
-}
-
-function calculateScore(cards) {
-    let score = 0;
-    let aces = 0;
-    cards.forEach(card => {
-        score += getCardValue(card);
-        if (card.value === 'A') aces++;
-    });
-
-    while (score > 21 && aces > 0) {
-        score -= 10;
-        aces--;
-    }
-
-    return score;
-}
-
-function updateBlackjackUI() {
-    const dealerCardsDiv = document.getElementById('dealerCards');
-    const playerCardsDiv = document.getElementById('playerCards');
-
-    dealerCardsDiv.innerHTML = '';
-    blackjackGame.dealerCards.forEach(card => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'card' + (['♥', '♦'].includes(card.suit) ? ' red' : '');
-        cardDiv.textContent = card.value + card.suit;
-        dealerCardsDiv.appendChild(cardDiv);
-    });
-
-    playerCardsDiv.innerHTML = '';
-    blackjackGame.playerCards.forEach(card => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'card' + (['♥', '♦'].includes(card.suit) ? ' red' : '');
-        cardDiv.textContent = card.value + card.suit;
-        playerCardsDiv.appendChild(cardDiv);
-    });
-
-    document.getElementById('dealerScore').textContent = calculateScore(blackjackGame.dealerCards);
-    document.getElementById('playerScore').textContent = calculateScore(blackjackGame.playerCards);
-}
-
-function hit() {
-    if (!blackjackGame.gameActive) return;
-    blackjackGame.playerCards.push(drawCard());
-    updateBlackjackUI();
-
-    const playerScore = calculateScore(blackjackGame.playerCards);
-    if (playerScore > 21) endBlackjack(false);
-}
-
-function stand() {
-    if (!blackjackGame.gameActive) return;
-
-    // дилер тянет до 17+
-    while (calculateScore(blackjackGame.dealerCards) < 17) {
-        blackjackGame.dealerCards.push(drawCard());
-    }
-
-    updateBlackjackUI();
-
-    const dealerScore = calculateScore(blackjackGame.dealerCards);
-    const playerScore = calculateScore(blackjackGame.playerCards);
-
-    const win = (playerScore <= 21 && (playerScore > dealerScore || dealerScore > 21));
-    endBlackjack(win);
-}
-
-function endBlackjack(win) {
-    const resultDiv = document.getElementById('blackjackResult');
-    document.getElementById('hitBtn').disabled = true;
-    document.getElementById('standBtn').disabled = true;
-    blackjackGame.gameActive = false;
-
-    if (win) {
-        const bet = parseInt(document.getElementById('blackjackBet').value);
-        const winnings = bet * 2;
-        balance += winnings;
-        resultDiv.className = 'result win';
-        resultDiv.textContent = `🎉 Вы выиграли ${winnings} монет!`;
-    } else {
-        resultDiv.className = 'result lose';
-        resultDiv.textContent = `😢 Вы проиграли. Попробуйте ещё!`;
-    }
-
-    updateBalance();
-}
 // Кости
 function rollDice() {
     return Math.floor(Math.random() * 6) + 1;
@@ -1196,64 +1099,6 @@ function handleDiceBet(choice) {
 
         updateBalance();
     }, 1000); // задержка для завершения анимации
-}
-// колесо фортуні (Эдуард потеет)
-let wheelRotation = 0; // запоминаем угол, чтобы вращение было равномерным
-
-function spinWheel() {
-    const bet = parseInt(document.getElementById('wheelBet').value);
-    const resultDiv = document.getElementById('wheelResult');
-    const wheel = document.getElementById('wheelFortune');
-
-    if (bet > balance || bet < 10 || bet > 300) {
-        alert('Недопустимая ставка!');
-        return;
-    }
-
-    balance -= bet;
-    updateBalance();
-
-    const segments = ['💰', '😢', '💎', '🎉', '🔥', '❌']; // 6 секторов
-    const segmentSize = 60; // каждый сектор занимает 60°
-    const winningIndex = Math.floor(Math.random() * segments.length);
-
-    // вращаем +5 оборотов и добавляем угол сектора
-    wheelRotation += 360 * 5 + winningIndex * segmentSize;
-    wheel.style.transform = `rotate(${wheelRotation}deg)`;
-
-    setTimeout(() => {
-        const outcome = segments[winningIndex];
-        let win = false;
-        let winnings = 0;
-
-        switch (outcome) {
-            case '💰':
-                winnings = bet * 2;
-                win = true;
-                break;
-            case '💎':
-                winnings = bet * 3;
-                win = true;
-                break;
-            case '🎉':
-                winnings = bet * 5;
-                win = true;
-                break;
-            default:
-                win = false;
-        }
-
-        if (win) {
-            balance += winnings;
-            resultDiv.className = 'result win';
-            resultDiv.textContent = `🎯 Выпало ${outcome}! Вы выиграли ${winnings} монет!`;
-        } else {
-            resultDiv.className = 'result lose';
-            resultDiv.textContent = `😔 Выпало ${outcome}. Повезёт в следующий раз.`;
-        }
-
-        updateBalance();
-    }, 1300); // под время анимации в CSS
 }
 
 // краш
@@ -1504,7 +1349,7 @@ function playRussianRoulette() {
         }
     }, 120);
 }
-// 21очко
+// 21 очко
 let twentyGame = {
     deck: [],
     player: [],
@@ -1624,4 +1469,156 @@ function endTwenty(win) {
 
     updateBalance();
 }
-        </script>
+//олимпус
+ let olympusState = {
+    spinning: false,
+    autoMode: false,
+    currentMultiplier: 1
+};
+
+const olympusSymbols = ['⚡', '💎', '🔥', '🍇', '👑', '🔔', '🌟', '🍀', '🪙', '🍋'];
+const symbolValues = {
+    '⚡': 25, '💎': 20, '🔥': 18, '🍇': 15,
+    '👑': 12, '🔔': 10, '🌟': 8, '🍀': 5, '🪙': 3, '🍋': 2
+};
+
+function createOlympusGrid() {
+    const grid = document.getElementById('olympusGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 16; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'olympus-cell';
+        cell.id = `olympus-cell-${i}`;
+        cell.textContent = olympusSymbols[Math.floor(Math.random() * olympusSymbols.length)];
+        grid.appendChild(cell);
+    }
+}
+
+function animateOlympusCells(cells) {
+    cells.forEach((cell, i) => {
+        cell.classList.remove('spin', 'winning');
+        setTimeout(() => {
+            cell.classList.add('spin');
+        }, i * 40);
+        setTimeout(() => {
+            cell.classList.remove('spin');
+        }, 600 + i * 40);
+    });
+}
+
+function spinOlympus() {
+    const bet = parseInt(document.getElementById('olympusBet').value);
+    const resultDiv = document.getElementById('olympusResult');
+    const spinBtn = document.getElementById('olympusSpinBtn');
+
+    if (olympusState.spinning || bet > balance || bet < 10 || bet > 300) return alert("Неверная ставка!");
+
+    balance -= bet;
+    updateBalance();
+    olympusState.spinning = true;
+    spinBtn.disabled = true;
+    resultDiv.textContent = '';
+    resultDiv.className = 'result';
+
+    const cells = document.querySelectorAll('.olympus-cell');
+    animateOlympusCells(cells);
+
+    const roll = Math.random();
+    const winChance = 0.2; // 20%
+    const isWin = roll < winChance;
+
+    olympusState.currentMultiplier = isWin
+        ? Math.floor(Math.random() * 4) + 2
+        : 1;
+
+    document.getElementById('multiplierValue').textContent = olympusState.currentMultiplier + 'x';
+
+    setTimeout(() => {
+        const finalSymbols = [];
+        let forcedSymbol = olympusSymbols[Math.floor(Math.random() * 5)];
+
+        cells.forEach((cell, index) => {
+            let symbol;
+            if (isWin && index < 5) {
+                symbol = forcedSymbol;
+            } else {
+                symbol = olympusSymbols[Math.floor(Math.random() * olympusSymbols.length)];
+            }
+            cell.textContent = symbol;
+            finalSymbols[index] = symbol;
+        });
+
+        const winningCombos = checkOlympusWins(finalSymbols);
+        let totalWin = 0;
+
+        if (winningCombos.length > 0) {
+            winningCombos.forEach(combo => {
+                combo.positions.forEach(pos => {
+                    cells[pos].classList.add('winning');
+                });
+                totalWin += Math.floor(symbolValues[combo.symbol] * combo.count * olympusState.currentMultiplier * 0.6);
+            });
+
+            balance += totalWin;
+            resultDiv.className = 'result win';
+            resultDiv.textContent = `🎉 Выигрыш! ${winningCombos.length} комбо ✖${olympusState.currentMultiplier} = ${totalWin} монет`;
+        } else {
+            resultDiv.className = 'result lose';
+            resultDiv.textContent = `😢 Нет совпадений. Попробуй снова!`;
+        }
+
+        updateBalance();
+        olympusState.spinning = false;
+        spinBtn.disabled = false;
+
+        if (olympusState.autoMode && balance >= bet) {
+            setTimeout(() => spinOlympus(), 2000);
+        }
+    }, 2500);
+}
+
+function checkOlympusWins(symbols) {
+    const wins = [];
+    const countMap = {};
+
+    symbols.forEach((symbol, index) => {
+        if (!countMap[symbol]) {
+            countMap[symbol] = { count: 0, positions: [] };
+        }
+        countMap[symbol].count++;
+        countMap[symbol].positions.push(index);
+    });
+
+    Object.keys(countMap).forEach(symbol => {
+        if (countMap[symbol].count >= 5) {
+            wins.push({
+                symbol,
+                count: countMap[symbol].count,
+                positions: countMap[symbol].positions
+            });
+        }
+    });
+
+    return wins;
+}
+
+function autoSpin() {
+    const autoBtn = document.getElementById('olympusAutoBtn');
+    olympusState.autoMode = !olympusState.autoMode;
+
+    if (olympusState.autoMode) {
+        autoBtn.textContent = '⏹ Стоп';
+        autoBtn.className = 'btn btn-danger';
+        if (!olympusState.spinning) spinOlympus();
+    } else {
+        autoBtn.textContent = '🔄 Авто';
+        autoBtn.className = 'btn btn-warning';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    createOlympusGrid();
+});
+
+
+	  </script>
